@@ -80,7 +80,38 @@ namespace WarGame.Core
             pot.Clear();
 
             return winner;
+            }
+            public bool IsGameOver()
+            {
+                int playersWithCards = 0;
+
+                foreach (var player in playerHands.Hands)
+                {
+                    if (player.Value.Count() > 0)
+                        playersWithCards++;
+                }
+
+                return playersWithCards <= 1;
+            }
+
+            public string GetWinner()
+            {
+                string winner = "";
+                int maxCards = 0;
+
+                foreach (var player in playerHands.Hands)
+                {
+                    int count = player.Value.Count();
+
+                    if (count > maxCards)
+                    {
+                        maxCards = count;
+                        winner = player.Key;
+                    }
+                }
+
+                return winner;
+            }
         }
     
-    }
 }
