@@ -1,32 +1,38 @@
+using System;
 using System.Collections.Generic;
 
 namespace WarGame.Core
 {
     public class Hand
     {
-        public Queue<Card> Cards { get; private set; }
+        private Queue<Card> cards;
 
         public Hand()
         {
-            Cards = new Queue<Card>();
+            cards = new Queue<Card>();
         }
 
-        // Add a card to the hand
         public void AddCard(Card card)
         {
-            Cards.Enqueue(card);
+            cards.Enqueue(card);
         }
 
-        // Play the top card
+        public void AddCards(IEnumerable<Card> newCards)
+        {
+            foreach (var card in newCards)
+            {
+                cards.Enqueue(card);
+            }
+        }
+
         public Card PlayCard()
         {
-            return Cards.Dequeue();
+            if (cards.Count == 0)
+                throw new InvalidOperationException("No cards left.");
+
+            return cards.Dequeue();
         }
 
-        // Number of cards in hand
-        public int Count()
-        {
-            return Cards.Count;
-        }
+        public int Count => cards.Count;
     }
 }

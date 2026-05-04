@@ -4,16 +4,26 @@ namespace WarGame.Core
 {
     public class PlayerHands
     {
-        public Dictionary<string, Hand> Hands { get; private set; }
+        private Dictionary<string, Hand> hands;
 
         public PlayerHands(List<string> playerNames)
         {
-            Hands = new Dictionary<string, Hand>();
+            hands = new Dictionary<string, Hand>();
 
-            foreach (string name in playerNames)
+            foreach (var name in playerNames)
             {
-                Hands[name] = new Hand();
+                hands[name] = new Hand();
             }
+        }
+
+        public Hand GetHand(string player)
+        {
+            return hands[player];
+        }
+
+        public IEnumerable<string> GetPlayers()
+        {
+            return hands.Keys;
         }
     }
 }

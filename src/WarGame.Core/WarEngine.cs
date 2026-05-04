@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace WarGame.Core
 {
@@ -7,111 +8,114 @@ namespace WarGame.Core
     {
         private Deck deck;
         private PlayerHands playerHands;
-        private PlayedCards playedCards;
         private List<Card> pot;
 
         public WarEngine(List<string> playerNames)
         {
             deck = new Deck();
             playerHands = new PlayerHands(playerNames);
-            playedCards = new PlayedCards();
             pot = new List<Card>();
 
             DealCards(playerNames);
         }
 
-        private void DealCards(List<string> playerNames)
+        private void DealCards(List<string> players)
         {
-            int playerIndex = 0;
+            int index = 0;
 
-            List<string> names = playerNames;
-
-            while (deck.Cards.Count > 0)
+            while (deck.Count > 0)
             {
-                string currentPlayer = names[playerIndex];
+                var player = players[index];
+                playerHands.GetHand(player).AddCard(deck.Draw());
 
-                Card card = deck.Cards.Pop();
-                playerHands.Hands[currentPlayer].AddCard(card);
-
-                playerIndex++;
-
-                if (playerIndex >= names.Count)
-                {
-                    playerIndex = 0;
-                }
+                index = (index + 1) % players.Count;
             }
         }
-        public string PlayRound()
+
+        public void PlayRound()
+        {
+            ResolveBattle(playerHands.GetPlayers().ToList());
+        }
+
+        private string ResolveBattle(List<string> players)
+        {
+            Dictionary<string, Card> round = new Dictionary<string, Card>();
+
+            foreach (var player in players)
             {
-                playedCards.Clear();
+                var hand = playerHands.GetHand(player);
 
-                // Each player plays one card
-                foreach (var player in playerHands.Hands)
-                {
-                    if (player.Value.Count() == 0)
-                        continue;
+                if (hand.Count == 0) continue;
 
-                    Card card = player.Value.PlayCard();
-                    Console.WriteLine(player.Key + " plays: " + card);
-                    
-                    playedCards.Add(player.Key, card);
-                    pot.Add(card);
-                }
+                var card = hand.PlayCard();
+                Console.WriteLine($"{player} plays {card}");
 
-            // Find highest card
-            string winner = "";
-            int highestRank = 0;
-
-            foreach (var entry in playedCards.Cards)
-            {
-                if (entry.Value.Rank > highestRank)
-                {
-                    highestRank = entry.Value.Rank;
-                    winner = entry.Key;
-                }
-            }   
-
-            // Give all pot cards to winner
-            foreach (Card card in pot)
-            {
-                playerHands.Hands[winner].AddCard(card);
+                round[player] = card;
+                pot.Add(card);
             }
 
-            pot.Clear();
+            int highest = round.Values.Max(c => c.Rank);
 
-            return winner;
-            }
-            public bool IsGameOver()
+            var winners = round
+                .Where(x => x.Value.Rank == highest)
+                .Select(x => x.Key)
+                .ToList();
+
+            if (winners.Count == 1)
             {
-                int playersWithCards = 0;
+                var winner = winners[0];
+                Console.WriteLine($"Winner: {winner}");
 
-                foreach (var player in playerHands.Hands)
-                {
-                    if (player.Value.Count() > 0)
-                        playersWithCards++;
-                }
-
-                return playersWithCards <= 1;
-            }
-
-            public string GetWinner()
-            {
-                string winner = "";
-                int maxCards = 0;
-
-                foreach (var player in playerHands.Hands)
-                {
-                    int count = player.Value.Count();
-
-                    if (count > maxCards)
-                    {
-                        maxCards = count;
-                        winner = player.Key;
-                    }
-                }
+                playerHands.GetHand(winner).AddCards(pot);
+                pot.Clear();
 
                 return winner;
             }
+
+            Console.WriteLine("WAR!");
+
+            List<string> warPlayers = new List<string>();
+
+            foreach (var player in winners)
+            {
+                var hand = playerHands.GetHand(player);
+
+                if (hand.Count < 2)
+                {
+                    Console.WriteLine($"{player} eliminated (not enough cards)");
+                    continue;
+                }
+
+                pot.Add(hand.PlayCard()); // face-down
+                warPlayers.Add(player);
+            }
+
+            if (warPlayers.Count == 1)
+            {
+                var winner = warPlayers[0];
+                playerHands.GetHand(winner).AddCards(pot);
+                pot.Clear();
+                return winner;
+            }
+
+            return ResolveBattle(warPlayers);
         }
-    
+
+        public bool IsGameOver()
+        {
+            int active = playerHands
+                .GetPlayers()
+                .Count(p => playerHands.GetHand(p).Count > 0);
+
+            return active <= 1;
+        }
+
+        public string GetWinner()
+        {
+            return playerHands
+                .GetPlayers()
+                .OrderByDescending(p => playerHands.GetHand(p).Count)
+                .First();
+        }
+    }
 }

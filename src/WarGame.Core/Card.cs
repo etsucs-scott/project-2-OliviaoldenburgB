@@ -1,3 +1,5 @@
+using System;
+
 namespace WarGame.Core
 {
     public class Card
@@ -7,21 +9,25 @@ namespace WarGame.Core
 
         public Card(string suit, int rank)
         {
+            if (rank < 2 || rank > 14)
+                throw new ArgumentException("Rank must be between 2 and 14.");
+
             Suit = suit;
             Rank = rank;
         }
 
         public override string ToString()
         {
-            string rankName;
+            string rankName = Rank switch
+            {
+                11 => "J",
+                12 => "Q",
+                13 => "K",
+                14 => "A",
+                _ => Rank.ToString()
+            };
 
-            if (Rank == 11) rankName = "J";
-            else if (Rank == 12) rankName = "Q";
-            else if (Rank == 13) rankName = "K";
-            else if (Rank == 14) rankName = "A";
-            else rankName = Rank.ToString();
-
-            return rankName + " of " + Suit;
-        }//this creates the suits for the cards and assigns the correct name to the rank of the card
+            return $"{rankName} of {Suit}";
+        }
     }
 }
